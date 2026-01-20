@@ -63,14 +63,14 @@ def distance_based_acceleration(swarm, target_position):
     for member in swarm:
         dx = target_position[0] - member["x"]
         dy = target_position[1] - member["y"]
-        if dx > 0:
-            member["ax"] += 0.01
+        distance = (dx**2 + dy**2) ** 0.5
+        k = 0.001  # acceleration constant
+        if distance != 0:
+            member["ax"] = k * dx
+            member["ay"] = k * dy
         else:
-            member["ax"] -= 0.01
-        if dy > 0:
-            member["ay"] += 0.01
-        else:
-            member["ay"] -= 0.01
+            member["ax"] = 0
+            member["ay"] = 0
 
 
 def swarm_logic(swarm, target_position):
@@ -89,13 +89,56 @@ def swarm_logic(swarm, target_position):
             member["y"] -= member["vy"]
 
 
+# data analysis and visualisation
+
+
+def history_tracking(swarm):
+    if len(swarm) == 1:
+        print("Swarm spawned with 1 member.")
+        print("History tracking initiated.")
+        cycle = 0
+        history = {cycle: swarm[0]}
+    else:
+        print(f"Swarm spawned with {len(swarm)} members.")
+        print("History tracking initiated for the first member only.")
+        cycle = 0
+        history = {cycle: swarm[0]}
+    return history, cycle
+
+
+def data_processing(history):
+    x_axis_timeline = []
+    x_timeline_y_axis = []
+    y_timeline_y_axis = []
+    vx_timeline_y_axis = []
+    vy_timeline_y_axis = []
+    ax_axis_timeline_y_axis = []
+    ay_axis_timeline_y_axis = []
+    for key in history:
+        x_axis_timeline.append(key)
+    for cycle in x_axis_timeline:
+        x_timeline_y_axis.append(history[cycle]["x"])
+        y_timeline_y_axis.append(history[cycle]["y"])
+        vx_timeline_y_axis.append(history[cycle]["vx"])
+        vy_timeline_y_axis.append(history[cycle]["vy"])
+        ax_axis_timeline_y_axis.append(history[cycle]["ax"])
+        ay_axis_timeline_y_axis.append(history[cycle]["ay"])
+    all_data = {
+        "x_axis": x_axis_timeline,
+        "x_timeline": x_timeline_y_axis,
+        "y_timeline": y_timeline_y_axis,
+        "vx_timeline": vx_timeline_y_axis,
+        "vy_timeline": vy_timeline_y_axis,
+        "ax_timeline": ax_axis_timeline_y_axis,
+        "ay_timeline": ay_axis_timeline_y_axis,
+    }
+    return all_data
+
+
 # main loop
 swarm = spawn_swarm(1)
-if len(swarm) == 1:
-    print("Swarm spawned with 1 member.")
-    print("History tracking initiated.")
-    cycle = 0
-    history = {cycle: swarm[0]}
+history, cycle = history_tracking(swarm)
+
 while running:
     cycle += 1
     for event in pygame.event.get():
@@ -116,20 +159,41 @@ while running:
     clock.tick(60)  # limit to 60 FPS
     pygame.display.flip()  # update the display
 
+all_data = data_processing(history)
+# print(f"\n {all_data}")
 
-print(f"\n {history}")
+
+def plot_swarm_history(all_data):
+    # Extract data for readability
+    cycles = all_data["x_axis"]
+    # Create a figure with 3 vertical subplots
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+    # 1. Plot Position (x, y)
+    ax1.plot(cycles, all_data["x_timeline"], label=r"$x$ Position", color="blue")
+    ax1.plot(cycles, all_data["y_timeline"], label=r"$y$ Position", color="cyan")
+    ax1.set_ylabel(r"Position (pixels)")
+    ax1.set_title(r"Swarm Member Kinematics Over Time")
+    ax1.legend()
+    ax1.grid(True, linestyle="--", alpha=0.7)
+
+    # 2. Plot Velocity (vx, vy)
+    ax2.plot(cycles, all_data["vx_timeline"], label=r"$v_x$", color="green")
+    ax2.plot(cycles, all_data["vy_timeline"], label=r"$v_y$", color="lime")
+    ax2.set_ylabel(r"Velocity (pixels/frame)")
+    ax2.legend()
+    ax2.grid(True, linestyle="--", alpha=0.7)
+
+    # 3. Plot Acceleration (ax, ay)
+    ax3.plot(cycles, all_data["ax_timeline"], label=r"$a_x$", color="red")
+    ax3.plot(cycles, all_data["ay_timeline"], label=r"$a_y$", color="orange")
+    ax3.set_ylabel(r"Acceleration (pixels/frame$^2$)")
+    ax3.set_xlabel(r"Cycle (Time)")
+    ax3.legend()
+    ax3.grid(True, linestyle="--", alpha=0.7)
+
+    # Adjust layout to prevent overlap
+    plt.tight_layout()
+    plt.show()
 
 
-# Extracting data from your history dictionary
-cycles = list(history.keys())
-x_coords = [data['x'] for data in history.values()]
-y_coords = [data['y'] for data in history.values()]
-
-plt.figure(figsize=(10, 6))
-plt.plot(x_coords, y_coords, marker='o', markersize=2, linestyle='-', alpha=0.6)
-plt.title("Swarm Member Trajectory")
-plt.xlabel("X Position (Pixels)")
-plt.ylabel("Y Position (Pixels)")
-plt.gca().invert_yaxis()  # Pygame Y-axis is inverted (0 is top)
-plt.grid(True)
-plt.show()
+plot_swarm_history(all_data)
