@@ -1,24 +1,35 @@
-import time
+import pygame
 
-interval = 1.0  # desired interval in seconds
-print("Program started with high precision.")
 
-# Run indefinitely, press Ctrl+C to stop
-try:
-    while True:
-        start_time = time.perf_counter()
+pygame.init()
+screen = pygame.display.set_mode((600, 600))
+pygame.display.set_caption("Mouse Position Tracker")
+clock = pygame.time.Clock()
+running = True
 
-        # Code to execute each second
-        current_time = time.strftime("%H:%M:%S", time.localtime())
-        print(f"Current time is: {current_time}")
 
-        # Calculate how long the actions took and how much time to sleep
-        elapsed_time = time.perf_counter() - start_time
-        time_to_sleep = interval - elapsed_time
-        print(time_to_sleep)
-        if time_to_sleep > 0:
-            time.sleep(time_to_sleep)
+def generate_triangle_points(center, size):
+    # here size is the distance from center to each vertex
+    # the triangle will be pointing to the right
+    # so the upper point would be the right most point
+    upper_point = (center[0] + size, center[1])
+    lower_base_point = (center[0] - size, center[1] + size)
+    right_base_point = (center[0] - size, center[1] - size)
+    list_coord = [upper_point, lower_base_point, right_base_point]
+    return list_coord
 
-except KeyboardInterrupt:
-    print("\nProgram finished by user.")
-    print(f"Total runtime: {time.perf_counter() - start_time:.6f} seconds")
+
+def swarm_visualisation(list_coord):
+    BLUE = (0, 0, 255)
+    pygame.draw.polygon(screen, BLUE, list_coord)
+
+
+list_coord = generate_triangle_points((300, 300), 20)
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+    screen.fill((255, 255, 255))  # Fill the screen with white
+    swarm_visualisation(list_coord)
+    clock.tick(60)
+    pygame.display.flip()
